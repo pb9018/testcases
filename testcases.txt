@@ -1,0 +1,263 @@
+package com.infy.ekart.service.test;
+
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
+
+import com.infy.ekart.dto.DealsForTodayDTO;
+import com.infy.ekart.dto.ProductDTO;
+import com.infy.ekart.dto.SellerDTO;
+
+import com.infy.ekart.entity.DealsForToday;
+import com.infy.ekart.entity.Product;
+import com.infy.ekart.entity.Seller;
+
+import com.infy.ekart.exception.EKartException;
+
+import com.infy.ekart.repository.DealsForTodayRepository;
+import com.infy.ekart.repository.ProductRepository;
+import com.infy.ekart.repository.SellerRepository;
+
+import com.infy.ekart.service.DealsForTodayService;
+import com.infy.ekart.service.DealsForTodayServiceImpl;
+
+@SpringBootTest
+public class DealsForTodayServiceTest {
+	
+	@Mock
+	private DealsForTodayRepository dealsForTodayRepository;
+	
+	@Mock
+	private ProductRepository productRepository;
+	
+	@Mock
+	private SellerRepository sellerRepository;
+	
+	@InjectMocks
+	
+	private DealsForTodayService dealsForTodayService= new DealsForTodayServiceImpl(); 
+	
+	@Test
+	void getProductsWithoutDealsValidTest() throws EKartException{
+		String sellerEmailId="xyz@infosys.com";
+		Integer pageNo=0;
+		Pageable pageable=PageRequest.of(0,10);
+		
+		List<Product> productList=new ArrayList<Product>();
+		
+		Product product=new Product();
+		product.setProductId(1004);
+		
+		productList.add(product);
+		
+		Mockito.when(dealsForTodayRepository.getproductsWithoutDealsForToday(sellerEmailId, pageable)).thenReturn(productList);
+		Assertions.assertNotNull(dealsForTodayService.getProductsWithoutDeals(sellerEmailId, pageNo));		
+	}
+	
+	
+	@Test
+	void getProductsWithoutDealsInvalidTest() throws EKartException{
+		String sellerEmailId="xyz@infosys.com";
+		Integer pageNo=0;
+		Pageable pageable=PageRequest.of(0,10);
+		List<Product> productList=new ArrayList<Product>();
+		
+		Mockito.when(dealsForTodayRepository.getproductsWithoutDealsForToday(sellerEmailId, pageable)).thenReturn(productList);
+		
+		EKartException e = Assertions.assertThrows(EKartException.class,()->dealsForTodayService.getProductsWithoutDeals(sellerEmailId, pageNo));
+		Assertions.assertEquals("DealsForToday.PRODUCTS_NOT_FOUND", e.getMessage());		
+	}
+	
+	
+	@Test
+	void addProductsTonewDealValidTest() throws EKartException{
+		DealsForTodayDTO dealsForTodayDTO=new DealsForTodayDTO();
+		
+		
+		SellerDTO sellerDTO=new SellerDTO();
+		sellerDTO.setEmailId("xyz@infosys.com");
+		sellerDTO.setName("xyz");
+		sellerDTO.setPassword("null");
+		sellerDTO.setConfirmNewPassword(null);
+		sellerDTO.setNewPassword(null);
+		sellerDTO.setPhoneNumber("7586923584");
+		sellerDTO.setAddress("Plot no:62");
+		sellerDTO.setErrorMessage(null);
+		sellerDTO.setProducts(null);
+		
+		ProductDTO productDTO=new ProductDTO();
+		productDTO.setProductId(1004);
+		productDTO.setName("Bot E5s Plus");
+		productDTO.setDescription("smart phone with (13+13)MP rear camera and 8MP front camera, 4GB RAM");
+		productDTO.setCategory("Electronics -Mobile");
+		productDTO.setBrand("Notobot");
+		productDTO.setPrice(16000.0);
+		productDTO.setDiscount(150.0);
+		productDTO.setQuantity(5);
+		productDTO.setErrorMessage(null);
+		productDTO.setSuccessMessage(null);
+		productDTO.setSellerEmailId("xyz@infosys.com");
+		
+		dealsForTodayDTO.setSellerDTO(sellerDTO);
+		dealsForTodayDTO.setProductDTO(productDTO);
+		dealsForTodayDTO.setDealDiscount(50.0);
+		dealsForTodayDTO.setStartDate(LocalDateTime.now());
+		dealsForTodayDTO.setEndDate(LocalDateTime.now().plusHours(6));
+		dealsForTodayDTO.setDealId(504117);
+		dealsForTodayDTO.setSuccessMessage(null);
+		
+		Seller seller = new Seller();
+		seller.setEmailId(dealsForTodayDTO.getSellerDTO().getEmailId());
+		
+		Product product =new Product();
+		product.setProductId(dealsForTodayDTO.getProductDTO().getProductId());
+		
+		DealsForToday dealsForToday=new DealsForToday();
+		dealsForToday.setSeller(seller);
+		dealsForToday.setProduct(product);
+		dealsForToday.setDealDiscount(dealsForTodayDTO.getDealDiscount());
+		dealsForToday.setStartDate(dealsForTodayDTO.getStartDate());
+		dealsForToday.setEndDate(dealsForTodayDTO.getEndDate());
+		dealsForToday.setDealId(dealsForTodayDTO.getDealId());
+		
+		
+		Mockito.when(sellerRepository.findById(Mockito.anyString())).thenReturn(Optional.of(seller));
+		Mockito.when(productRepository.findById(Mockito.anyInt())).thenReturn(Optional.of(product));
+		Mockito.when(dealsForTodayRepository.save(Mockito.any())).thenReturn(dealsForToday);
+		Assertions.assertDoesNotThrow(()->dealsForTodayService.addProductsTonewDeal(dealsForTodayDTO));
+	
+	}
+	
+	@Test
+	void addProductsTonewDealInvalidSellerTest() throws EKartException{
+		DealsForTodayDTO dealsForTodayDTO=new DealsForTodayDTO();
+		SellerDTO sellerDTO=new SellerDTO();
+		sellerDTO.setEmailId("abc@infosys.com");
+		
+		ProductDTO productDTO=new ProductDTO();
+		productDTO.setProductId(1234);
+		
+		dealsForTodayDTO.setSellerDTO(sellerDTO);
+		dealsForTodayDTO.setProductDTO(productDTO);
+		
+		Product product=new Product();
+		product.setProductId(dealsForTodayDTO.getProductDTO().getProductId());
+		
+		Mockito.when(productRepository.findById(Mockito.anyInt())).thenReturn(Optional.of(product));
+		Mockito.when(sellerRepository.findById(Mockito.anyString())).thenReturn(Optional.empty());
+		EKartException e=Assertions.assertThrows(EKartException.class, ()->dealsForTodayService.addProductsTonewDeal(dealsForTodayDTO));
+		Assertions.assertEquals("Service.SELLER_NOT_FOUND", e.getMessage());
+		}
+	
+	
+	@Test
+	void addProductsTonewDealInvalidProductTest() throws EKartException{
+		DealsForTodayDTO dealsForTodayDTO=new DealsForTodayDTO();
+		SellerDTO sellerDTO=new SellerDTO();
+		sellerDTO.setEmailId("abc@infosys.com");
+		
+		ProductDTO productDTO=new ProductDTO();
+		productDTO.setProductId(1234);
+		
+		dealsForTodayDTO.setSellerDTO(sellerDTO);
+		dealsForTodayDTO.setProductDTO(productDTO);
+		
+		
+		Seller seller=new Seller();
+		seller.setEmailId(dealsForTodayDTO.getSellerDTO().getEmailId());
+		
+		
+		Mockito.when(sellerRepository.findById(Mockito.anyString())).thenReturn(Optional.of(seller));
+		Mockito.when(productRepository.findById(Mockito.anyInt())).thenReturn(Optional.empty());
+		
+		
+		EKartException e=Assertions.assertThrows(EKartException.class, ()->dealsForTodayService.addProductsTonewDeal(dealsForTodayDTO));
+
+		Assertions.assertEquals("Service.PRODUCT_NOT_FOUND", e.getMessage());		
+
+		
+	}
+	
+	
+	@Test
+	void viewSellerDealsValidTest() throws EKartException{
+		String sellerEmailId="xyz@infosys.com"; 
+		List<DealsForToday> list=new ArrayList<>();
+		DealsForToday dealsForToday=new DealsForToday();
+		dealsForToday.setDealId(504117);
+		
+		Seller seller=new Seller();
+		seller.setEmailId(sellerEmailId);
+		dealsForToday.setSeller(seller);
+
+        Product product=new Product();
+        product.setProductId(1002);
+        dealsForToday.setProduct(product);
+        
+        
+        list.add(dealsForToday);
+        Integer pageNo=0;
+        Pageable pageable=PageRequest.of(0,10);
+        Mockito.when(dealsForTodayRepository.findBySellerEmailId(sellerEmailId,pageable)).thenReturn(list);
+
+        Assertions.assertNotNull(dealsForTodayService.viewSellerDeals(sellerEmailId,pageNo));
+        
+   }
+	
+	
+	
+	@Test
+	void viewSellerDealsInvalidTest() throws EKartException{
+		String sellerEmailId="xyz@infosys.com";
+		List<DealsForToday> list=new ArrayList<>();
+		Integer pageNo=0;
+		Pageable pageable=PageRequest.of(0, 10);
+		
+		Mockito.when(dealsForTodayRepository.findBySellerEmailId(sellerEmailId,pageable)).thenReturn(list);
+		
+		EKartException e=Assertions.assertThrows(EKartException.class, ()->dealsForTodayService.viewSellerDeals(sellerEmailId,pageNo));
+		
+		Assertions.assertEquals("DealsForToday.NO_PRODUCTS_ON_DEAL", e.getMessage());  
+	}
+
+	
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
